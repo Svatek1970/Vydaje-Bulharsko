@@ -20,6 +20,11 @@ export default function SummaryPanel({ vydavky, pocetOsob, limitNaOsobu, onNasta
   const naOsobuSpolu = pocetOsob > 0 ? (celkomZaplatene + celkomPlanovane) / pocetOsob : 0
   const percentoLimitu = limitNaOsobu > 0 ? (naOsobuSpolu / limitNaOsobu) * 100 : 0
 
+  // Koľko ostáva do limitu - spolu za celú skupinu aj na osobu (môže byť aj záporné, ak je limit prekročený)
+  const limitCelkom = limitNaOsobu * pocetOsob
+  const zostavaCelkom = limitCelkom - (celkomZaplatene + celkomPlanovane)
+  const zostavaNaOsobu = limitNaOsobu - naOsobuSpolu
+
   // Farby ukazovateľa limitu: zelená v pohode, oranžová sa blíži, červená prekročené
   const farbaPruh =
     percentoLimitu >= 100 ? 'bg-red-600' : percentoLimitu >= 80 ? 'bg-amber-500' : 'bg-emerald-600'
@@ -29,6 +34,14 @@ export default function SummaryPanel({ vydavky, pocetOsob, limitNaOsobu, onNasta
       : percentoLimitu >= 80
         ? 'text-amber-700'
         : 'text-emerald-700'
+
+  // "Zostáva 120,00 €" alebo pri prekročení "Prekročené o 50,00 €" (červenou)
+  function zostavaText(zostava: number) {
+    if (zostava < 0) {
+      return { text: `Prekročené o ${formatSuma(Math.abs(zostava))}`, farba: 'text-red-700' }
+    }
+    return { text: `Zostáva ${formatSuma(zostava)}`, farba: 'text-zinc-600' }
+  }
 
   // Rozpad podľa spôsobu platby sa počíta len zo skutočne zaplatených výdavkov
   const rozpad = SPOSOBY_PLATBY.map((s) => ({
@@ -86,9 +99,27 @@ export default function SummaryPanel({ vydavky, pocetOsob, limitNaOsobu, onNasta
       </div>
 
       {celkomPlanovane > 0 && (
-        <div className="mt-1 text-xs text-zinc-600">
-          Plánované (nezaplatené):{' '}
-          <span className="font-semibold">{formatSuma(celkomPlanovane)}</span>
+        <div className="mt-1 space-y-0.5 text-xs text-zinc-600">
+          <div>
+            Plánované (nezaplatené):{' '}
+            <span className="font-semibold">{formatSuma(celkomPlanovane)}</span>
+          </div>
+          <div>
+            Na osobu vrátane plánovaných:{' '}
+            <span className="font-semibold">{formatSuma(naOsobuSpolu)}</span>
+          </div>
+          <div>
+            Zostáva do limitu spolu:{' '}
+            <span className={`font-semibold ${zostavaText(zostavaCelkom).farba}`}>
+              {zostavaText(zostavaCelkom).text}
+            </span>
+          </div>
+          <div>
+            Zostáva do limitu na osobu:{' '}
+            <span className={`font-semibold ${zostavaText(zostavaNaOsobu).farba}`}>
+              {zostavaText(zostavaNaOsobu).text}
+            </span>
+          </div>
         </div>
       )}
 
