@@ -9,6 +9,7 @@ export interface VydavokFormData {
   sposobPlatby: SposobPlatby
   poznamka?: string
   datum: Date
+  planovany: boolean
 }
 
 interface Props {
@@ -26,6 +27,7 @@ export default function ExpenseForm({ existujuci, onUlozit, onZrusit, onZmazat }
   const [sposobPlatby, setSposobPlatby] = useState<SposobPlatby>(
     existujuci?.sposobPlatby ?? 'hotovost',
   )
+  const [planovany, setPlanovany] = useState(existujuci?.planovany ?? false)
   const [poznamka, setPoznamka] = useState(existujuci?.poznamka ?? '')
   const [datum, setDatum] = useState(datumNaInputHodnotu(existujuci?.datum ?? new Date()))
   const [chyba, setChyba] = useState<string | null>(null)
@@ -54,6 +56,7 @@ export default function ExpenseForm({ existujuci, onUlozit, onZrusit, onZmazat }
       sposobPlatby,
       poznamka: poznamka.trim() || undefined,
       datum: inputHodnotaNaDatum(datum),
+      planovany,
     })
   }
 
@@ -118,6 +121,41 @@ export default function ExpenseForm({ existujuci, onUlozit, onZrusit, onZmazat }
         <div>
           <span className="mb-1 block text-sm font-medium text-zinc-700">Spôsob platby</span>
           <PaymentMethodPicker vybrany={sposobPlatby} onVyber={setSposobPlatby} />
+        </div>
+
+        <div>
+          <span className="mb-1 block text-sm font-medium text-zinc-700">Stav</span>
+          <div className="grid grid-cols-2 gap-2">
+            <button
+              type="button"
+              onClick={() => setPlanovany(false)}
+              aria-pressed={!planovany}
+              className={`min-h-11 rounded-lg border-2 text-base font-semibold ${
+                !planovany
+                  ? 'border-zinc-900 bg-zinc-900 text-white'
+                  : 'border-zinc-300 bg-white text-zinc-700'
+              }`}
+            >
+              Zaplatené
+            </button>
+            <button
+              type="button"
+              onClick={() => setPlanovany(true)}
+              aria-pressed={planovany}
+              className={`min-h-11 rounded-lg border-2 text-base font-semibold ${
+                planovany
+                  ? 'border-zinc-900 bg-zinc-900 text-white'
+                  : 'border-zinc-300 bg-white text-zinc-700'
+              }`}
+            >
+              Plánované
+            </button>
+          </div>
+          {planovany && (
+            <p className="mt-1 text-xs text-zinc-600">
+              Ešte nezaplatené — v zozname sa zobrazí sivým písmom.
+            </p>
+          )}
         </div>
 
         <label className="block">

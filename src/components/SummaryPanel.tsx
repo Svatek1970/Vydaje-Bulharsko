@@ -5,16 +5,35 @@ import type { Vydavok } from '../types'
 interface Props {
   vydavky: Vydavok[]
   pocetOsob: number
+  limitNaOsobu: number
   onNastavenia: () => void
 }
 
-export default function SummaryPanel({ vydavky, pocetOsob, onNastavenia }: Props) {
-  const celkom = vydavky.reduce((sucet, v) => sucet + v.suma, 0)
-  const naOsobu = pocetOsob > 0 ? celkom / pocetOsob : 0
+export default function SummaryPanel({ vydavky, pocetOsob, limitNaOsobu, onNastavenia }: Props) {
+  const zaplatene = vydavky.filter((v) => !v.planovany)
+  const planovane = vydavky.filter((v) => v.planovany)
 
+  const celkomZaplatene = zaplatene.reduce((sucet, v) => sucet + v.suma, 0)
+  const celkomPlanovane = planovane.reduce((sucet, v) => sucet + v.suma, 0)
+
+  const naOsobuZaplatene = pocetOsob > 0 ? celkomZaplatene / pocetOsob : 0
+  const naOsobuSpolu = pocetOsob > 0 ? (celkomZaplatene + celkomPlanovane) / pocetOsob : 0
+  const percentoLimitu = limitNaOsobu > 0 ? (naOsobuSpolu / limitNaOsobu) * 100 : 0
+
+  // Farby ukazovateľa limitu: zelená v pohode, oranžová sa blíži, červená prekročené
+  const farbaPruh =
+    percentoLimitu >= 100 ? 'bg-red-600' : percentoLimitu >= 80 ? 'bg-amber-500' : 'bg-emerald-600'
+  const farbaText =
+    percentoLimitu >= 100
+      ? 'text-red-700'
+      : percentoLimitu >= 80
+        ? 'text-amber-700'
+        : 'text-emerald-700'
+
+  // Rozpad podľa spôsobu platby sa počíta len zo skutočne zaplatených výdavkov
   const rozpad = SPOSOBY_PLATBY.map((s) => ({
     ...s,
-    suma: vydavky
+    suma: zaplatene
       .filter((v) => v.sposobPlatby === s.hodnota)
       .reduce((sucet, v) => sucet + v.suma, 0),
   }))
@@ -45,7 +64,7 @@ export default function SummaryPanel({ vydavky, pocetOsob, onNastavenia }: Props
             Náklady celkom
           </div>
           <div className="text-3xl font-bold text-zinc-900 tabular-nums">
-            {formatSuma(celkom)}
+            {formatSuma(celkomZaplatene)}
           </div>
         </div>
         <div className="text-right">
@@ -53,7 +72,7 @@ export default function SummaryPanel({ vydavky, pocetOsob, onNastavenia }: Props
             Na osobu
           </div>
           <div className="text-2xl font-bold text-zinc-900 tabular-nums">
-            {formatSuma(naOsobu)}
+            {formatSuma(naOsobuZaplatene)}
           </div>
         </div>
       </div>
@@ -64,6 +83,28 @@ export default function SummaryPanel({ vydavky, pocetOsob, onNastavenia }: Props
             {s.label}: <span className="font-semibold">{formatSuma(s.suma)}</span>
           </span>
         ))}
+      </div>
+
+      {celkomPlanovane > 0 && (
+        <div className="mt-1 text-xs text-zinc-600">
+          Plánované (nezaplatené):{' '}
+          <span className="font-semibold">{formatSuma(celkomPlanovane)}</span>
+        </div>
+      )}
+
+      <div className="mt-2">
+        <div className="flex items-center justify-between text-xs text-zinc-600">
+          <span>Limit {formatSuma(limitNaOsobu)} / osobu</span>
+          <span className={`font-semibold tabular-nums ${farbaText}`}>
+            {Math.round(percentoLimitu)} %
+          </span>
+        </div>
+        <div className="mt-1 h-2 w-full overflow-hidden rounded-full bg-zinc-200">
+          <div
+            className={`h-full ${farbaPruh}`}
+            style={{ width: `${Math.min(percentoLimitu, 100)}%` }}
+          />
+        </div>
       </div>
     </div>
   )

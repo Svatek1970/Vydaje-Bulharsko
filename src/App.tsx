@@ -53,12 +53,18 @@ function App() {
     await db.nastavenia.update(NASTAVENIA_ID, { pocetOsob: pocet })
   }
 
+  async function handleZmenLimit(limit: number) {
+    await db.nastavenia.update(NASTAVENIA_ID, { limitNaOsobu: limit })
+  }
+
   if (zobrazitNastavenia) {
     return (
       <SettingsScreen
         vydavky={vydavky}
         pocetOsob={nastavenia.pocetOsob}
+        limitNaOsobu={nastavenia.limitNaOsobu}
         onZmenPocetOsob={handleZmenPocetOsob}
+        onZmenLimit={handleZmenLimit}
         onSpat={() => setZobrazitNastavenia(false)}
       />
     )
@@ -74,6 +80,7 @@ function App() {
         <SummaryPanel
           vydavky={vydavky}
           pocetOsob={nastavenia.pocetOsob}
+          limitNaOsobu={nastavenia.limitNaOsobu}
           onNastavenia={() => setZobrazitNastavenia(true)}
         />
         <ExpenseList vydavky={vydavky} onVyber={(v) => setStavFormulara(v.id)} />

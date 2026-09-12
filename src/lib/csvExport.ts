@@ -22,9 +22,13 @@ function formatDatumCsv(datum: Date): string {
 
 // Vytvorí obsah CSV súboru zo zoznamu výdavkov (bodkočiarka ako oddeľovač - Excel s SK
 // nastaveniami takto správne rozdelí stĺpce a zároveň nekoliduje s desatinnou čiarkou v sume)
-export function vydavkyNaCsv(vydavky: Vydavok[], pocetOsob: number): string {
+export function vydavkyNaCsv(
+  vydavky: Vydavok[],
+  pocetOsob: number,
+  limitNaOsobu: number,
+): string {
   const riadky: string[] = []
-  riadky.push(csvRiadok(['Dátum', 'Názov', 'Suma (€)', 'Spôsob platby', 'Poznámka']))
+  riadky.push(csvRiadok(['Dátum', 'Názov', 'Suma (€)', 'Spôsob platby', 'Stav', 'Poznámka']))
 
   for (const v of vydavky) {
     riadky.push(
@@ -33,15 +37,25 @@ export function vydavkyNaCsv(vydavky: Vydavok[], pocetOsob: number): string {
         v.nazov,
         v.suma.toFixed(2).replace('.', ','),
         infoPreSposobPlatby(v.sposobPlatby).label,
+        v.planovany ? 'Plánované' : 'Zaplatené',
         v.poznamka ?? '',
       ]),
     )
   }
 
-  const celkom = vydavky.reduce((sucet, v) => sucet + v.suma, 0)
+  const zaplatene = vydavky.filter((v) => !v.planovany)
+  const planovane = vydavky.filter((v) => v.planovany)
+  const celkomZaplatene = zaplatene.reduce((sucet, v) => sucet + v.suma, 0)
+  const celkomPlanovane = planovane.reduce((sucet, v) => sucet + v.suma, 0)
+  const naOsobuZaplatene = pocetOsob > 0 ? celkomZaplatene / pocetOsob : 0
+  const naOsobuSpolu = pocetOsob > 0 ? (celkomZaplatene + celkomPlanovane) / pocetOsob : 0
+
   riadky.push('')
-  riadky.push(csvRiadok(['Spolu', formatSuma(celkom)]))
-  riadky.push(csvRiadok(['Na osobu', formatSuma(pocetOsob > 0 ? celkom / pocetOsob : 0)]))
+  riadky.push(csvRiadok(['Zaplatené spolu', formatSuma(celkomZaplatene)]))
+  riadky.push(csvRiadok(['Na osobu (zaplatené)', formatSuma(naOsobuZaplatene)]))
+  riadky.push(csvRiadok(['Plánované spolu', formatSuma(celkomPlanovane)]))
+  riadky.push(csvRiadok(['Na osobu (zaplatené + plánované)', formatSuma(naOsobuSpolu)]))
+  riadky.push(csvRiadok(['Limit na osobu', formatSuma(limitNaOsobu)]))
 
   // BOM na začiatku zabezpečí, že Excel správne rozpozná UTF-8 a slovenskú diakritiku
   return '﻿' + riadky.join('\r\n')

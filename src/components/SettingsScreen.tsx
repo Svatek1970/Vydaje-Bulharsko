@@ -6,25 +6,36 @@ import type { Vydavok } from '../types'
 interface Props {
   vydavky: Vydavok[]
   pocetOsob: number
+  limitNaOsobu: number
   onZmenPocetOsob: (pocet: number) => void
+  onZmenLimit: (limit: number) => void
   onSpat: () => void
 }
 
 const MIN_POCET_OSOB = 1
 const MAX_POCET_OSOB = 999
+const MIN_LIMIT = 1
+const MAX_LIMIT = 100000
 
 export default function SettingsScreen({
   vydavky,
   pocetOsob,
+  limitNaOsobu,
   onZmenPocetOsob,
+  onZmenLimit,
   onSpat,
 }: Props) {
   const [text, setText] = useState(String(pocetOsob))
+  const [limitText, setLimitText] = useState(limitNaOsobu.toFixed(2).replace('.', ','))
 
-  // Ak sa počet osôb zmení zvonku (napr. cez tlačidlá +/-), zosynchronizuj textové pole
+  // Ak sa počet osôb/limit zmenia zvonku (napr. cez tlačidlá +/-), zosynchronizuj textové polia
   useEffect(() => {
     setText(String(pocetOsob))
   }, [pocetOsob])
+
+  useEffect(() => {
+    setLimitText(limitNaOsobu.toFixed(2).replace('.', ','))
+  }, [limitNaOsobu])
 
   function potvrdText() {
     const n = Number.parseInt(text, 10)
@@ -40,8 +51,17 @@ export default function SettingsScreen({
     onZmenPocetOsob(n)
   }
 
+  function potvrdLimit() {
+    const cislo = Number.parseFloat(limitText.replace(',', '.'))
+    if (Number.isFinite(cislo) && cislo >= MIN_LIMIT && cislo <= MAX_LIMIT) {
+      onZmenLimit(Math.round(cislo * 100) / 100)
+    } else {
+      setLimitText(limitNaOsobu.toFixed(2).replace('.', ','))
+    }
+  }
+
   function handleExport() {
-    const obsah = vydavkyNaCsv(vydavky, pocetOsob)
+    const obsah = vydavkyNaCsv(vydavky, pocetOsob, limitNaOsobu)
     const dnes = new Date().toISOString().slice(0, 10)
     stiahnutSubor(obsah, `vydavky_${dnes}.csv`, 'text/csv;charset=utf-8;')
   }
@@ -102,6 +122,27 @@ export default function SettingsScreen({
           </div>
           <p className="mt-2 text-xs text-zinc-600">
             Ovplyvňuje prepočet nákladov „na osobu" na hlavnej obrazovke.
+          </p>
+        </section>
+
+        <section>
+          <span className="mb-2 block text-sm font-medium text-zinc-700">
+            Horný limit na osobu
+          </span>
+          <div className="flex items-center gap-2">
+            <input
+              type="text"
+              inputMode="decimal"
+              value={limitText}
+              onChange={(e) => setLimitText(e.target.value)}
+              onBlur={potvrdLimit}
+              className="min-h-11 w-32 rounded-lg border border-zinc-300 px-3 text-lg font-semibold text-zinc-900"
+            />
+            <span className="text-lg font-semibold text-zinc-700">€</span>
+          </div>
+          <p className="mt-2 text-xs text-zinc-600">
+            Farebný pásik na hlavnej obrazovke ukazuje, ako blízko je súčet zaplatených a
+            plánovaných výdavkov na osobu k tomuto limitu.
           </p>
         </section>
 

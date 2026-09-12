@@ -11,10 +11,13 @@ export interface Vydavok {
   foto?: Blob // fotka účtenky - zatiaľ sa nepoužíva, doplníme neskôr
   datum: Date
   vytvorene: Date
+  // true = ešte nezaplatené, len naplánované. Chýbajúce/false = bežný (zaplatený) výdavok.
+  planovany?: boolean
 }
 
 // Nastavenia appky (jeden záznam v databáze)
 export interface Nastavenia {
   id: string
   pocetOsob: number
+  limitNaOsobu: number
 }
